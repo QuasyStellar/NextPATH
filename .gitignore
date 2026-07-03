@@ -1,0 +1,51 @@
+# Binaries and executable files
+/nextpath-engine
+/nextpath-compiler
+/build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+
+# Go dependencies and tooling
+/vendor/
+/sdk/
+.pnp*
+.yarn/
+
+# Local configurations & secrets
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.staging
+
+# NextPATH runtime directories and dynamic outputs
+result/
+download/
+letsencrypt/
+
+# TLS certificates 
+certs/
+
+# Generated lists and hashes
+/lists/*.txt
+/lists/*.rpz
+/lists/.hash_*
+
+# IDEs, editors & OS files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+.DS_Store
+Thumbs.db

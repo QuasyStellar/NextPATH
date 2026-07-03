@@ -1,0 +1,4 @@
+# Add custom RPZ records for PATH
+# Records must be added in RPZ format (Instance 1)
+# Example:
+# example.com CNAME .

@@ -1,0 +1,5 @@
+# Exclude ad domains from blocking via PATH
+# Add domains to this file that you do NOT want to block
+# Domains must be added one per line
+# Examples:
+# analytics.google.com

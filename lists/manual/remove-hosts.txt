@@ -1,0 +1,3 @@
+# Force remove domains from all PATH lists
+# Domains from this file will be removed from all lists (including automatic ones)
+# Domains must be added one per line

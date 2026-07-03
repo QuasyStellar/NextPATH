@@ -1,0 +1,3 @@
+# Links to domain lists for PATH routing
+# Format: https://example.com/list.txt
+# Direct link to a text file containing a list of domains

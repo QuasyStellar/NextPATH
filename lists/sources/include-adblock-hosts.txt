@@ -1,0 +1,2 @@
+# Links to ad domain lists for blocking via PATH
+# Format: https://example.com/list.txt

@@ -1,0 +1,6 @@
+# Exclude IP addresses from PATH routing
+# Add IP addresses or subnets to this file that you do NOT want to route through the proxy
+# Records must be added one per line in IP or CIDR format
+# Examples:
+# 1.2.3.4
+# 1.2.3.0/24

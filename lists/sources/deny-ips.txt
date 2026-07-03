@@ -1,0 +1,2 @@
+# Links to IP blocklists (Threat feeds, Tor exit nodes, spam lists, etc.)
+# Format: https://example.com/list.txt

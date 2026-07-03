@@ -1,0 +1,13 @@
+.git
+.github
+.env
+*.log
+result/
+download/
+config/ssl/
+.idea/
+.vscode/
+scripts/
+README.md
+certs/
+**/*_test.go

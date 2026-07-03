@@ -1,0 +1,6 @@
+# Add domains for PATH routing
+# Add domains to this file that you want to route through the proxy
+# Domains must be added one per line
+# Examples:
+# domain.com
+# sub.domain.com

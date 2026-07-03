@@ -1,0 +1,93 @@
+name: Compile and Publish Lists
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Inject Secret Sources
+        env:
+          URLS_INCLUDE_HOSTS: ${{ secrets.URLS_INCLUDE_HOSTS }}
+          URLS_EXCLUDE_HOSTS: ${{ secrets.URLS_EXCLUDE_HOSTS }}
+          URLS_INCLUDE_IPS: ${{ secrets.URLS_INCLUDE_IPS }}
+          URLS_EXCLUDE_IPS: ${{ secrets.URLS_EXCLUDE_IPS }}
+          URLS_DENY_IPS: ${{ secrets.URLS_DENY_IPS }}
+          URLS_ADBLOCK_HOSTS: ${{ secrets.URLS_ADBLOCK_HOSTS }}
+          URLS_EXCLUDE_ADBLOCK_HOSTS: ${{ secrets.URLS_EXCLUDE_ADBLOCK_HOSTS }}
+          URLS_REMOVE_HOSTS: ${{ secrets.URLS_REMOVE_HOSTS }}
+          URLS_RPZ: ${{ secrets.URLS_RPZ }}
+          URLS_RPZ2: ${{ secrets.URLS_RPZ2 }}
+          MANUAL_INCLUDE_HOSTS: ${{ secrets.MANUAL_INCLUDE_HOSTS }}
+          MANUAL_EXCLUDE_HOSTS: ${{ secrets.MANUAL_EXCLUDE_HOSTS }}
+          MANUAL_INCLUDE_IPS: ${{ secrets.MANUAL_INCLUDE_IPS }}
+          MANUAL_EXCLUDE_IPS: ${{ secrets.MANUAL_EXCLUDE_IPS }}
+          MANUAL_DENY_IPS: ${{ secrets.MANUAL_DENY_IPS }}
+          MANUAL_ADBLOCK_HOSTS: ${{ secrets.MANUAL_ADBLOCK_HOSTS }}
+          MANUAL_EXCLUDE_ADBLOCK_HOSTS: ${{ secrets.MANUAL_EXCLUDE_ADBLOCK_HOSTS }}
+          MANUAL_REMOVE_HOSTS: ${{ secrets.MANUAL_REMOVE_HOSTS }}
+          MANUAL_RPZ: ${{ secrets.MANUAL_RPZ }}
+          MANUAL_RPZ2: ${{ secrets.MANUAL_RPZ2 }}
+        run: |
+          echo "$URLS_INCLUDE_HOSTS" > lists/sources/include-hosts.txt
+          echo "$URLS_EXCLUDE_HOSTS" > lists/sources/exclude-hosts.txt
+          echo "$URLS_INCLUDE_IPS" > lists/sources/include-ips.txt
+          echo "$URLS_EXCLUDE_IPS" > lists/sources/exclude-ips.txt
+          echo "$URLS_DENY_IPS" > lists/sources/deny-ips.txt
+          echo "$URLS_ADBLOCK_HOSTS" > lists/sources/include-adblock-hosts.txt
+          echo "$URLS_EXCLUDE_ADBLOCK_HOSTS" > lists/sources/exclude-adblock-hosts.txt
+          echo "$URLS_REMOVE_HOSTS" > lists/sources/remove-hosts.txt
+          echo "$URLS_RPZ" > lists/sources/rpz.txt
+          echo "$URLS_RPZ2" > lists/sources/rpz2.txt
+ 
+          echo "$MANUAL_INCLUDE_HOSTS" > lists/manual/include-hosts.txt
+          echo "$MANUAL_EXCLUDE_HOSTS" > lists/manual/exclude-hosts.txt
+          echo "$MANUAL_INCLUDE_IPS" > lists/manual/include-ips.txt
+          echo "$MANUAL_EXCLUDE_IPS" > lists/manual/exclude-ips.txt
+          echo "$MANUAL_DENY_IPS" > lists/manual/deny-ips.txt
+          echo "$MANUAL_ADBLOCK_HOSTS" > lists/manual/include-adblock-hosts.txt
+          echo "$MANUAL_EXCLUDE_ADBLOCK_HOSTS" > lists/manual/exclude-adblock-hosts.txt
+          echo "$MANUAL_REMOVE_HOSTS" > lists/manual/remove-hosts.txt
+          echo "$MANUAL_RPZ" > lists/manual/rpz.txt
+          echo "$MANUAL_RPZ2" > lists/manual/rpz2.txt
+
+      - name: Compile Lists
+        env:
+          COMPILE_ONLY: "true"
+          COMPILE_LOCAL: "true"
+          SOURCES_DIR: "./lists/sources"
+          MANUAL_DIR: "./lists/manual"
+          DOWNLOAD_DIR: "./download"
+          RESULT_DIR: "./result"
+        run: go run ./cmd/nextpath-compiler/main.go
+
+      - name: Compress Results
+        run: |
+          cd result
+          tar -czvf ../result.tar.gz *.rpz *.txt .hash_domains .hash_ips
+          cd ..
+          mkdir -p public_lists
+          mv result.tar.gz public_lists/
+
+      - name: Publish to lists-release branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: lists-release
+          publish_dir: ./public_lists
+          keep_files: false
+          force_orphan: true

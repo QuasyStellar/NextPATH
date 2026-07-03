@@ -1,0 +1,2 @@
+# Links to domain exclusion lists for PATH
+# Format: https://example.com/list.txt

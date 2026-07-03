@@ -1,0 +1,6 @@
+# Add ad domains for blocking via PATH
+# Add domains to this file that you want to block (Adblock)
+# Domains must be added one per line
+# Examples:
+# doubleclick.net
+# ads.google.com

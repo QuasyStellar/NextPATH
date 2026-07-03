@@ -1,0 +1,24 @@
+services:
+  nextpath:
+    image: quasystellaris/nextpath:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextpath
+    restart: always
+    network_mode: host
+    privileged: true
+    env_file:
+      - .env
+    volumes:
+      - ./lists:/app/nextpath/lists
+      - ./result:/app/nextpath/result
+      - ./download:/app/nextpath/download
+      # Uncomment the line below to mount TLS certificates for P2P Sync and DoH:
+      # - ./certs:/app/nextpath/certs:ro
+    healthcheck:
+      test: ["CMD", "nextpath-engine", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s

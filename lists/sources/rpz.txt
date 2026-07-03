@@ -1,0 +1,2 @@
+# Links to additional RPZ zones for PATH
+# Format: https://example.com/list.txt

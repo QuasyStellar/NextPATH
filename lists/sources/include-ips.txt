@@ -1,0 +1,2 @@
+# Links to IP address lists for PATH routing
+# Format: https://example.com/list.txt

@@ -1,0 +1,45 @@
+services:
+  nextpath:
+    image: quasystellaris/nextpath:latest
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - hostnet
+    volumes:
+      - nextpath-lists:/app/nextpath/lists
+      - nextpath-result:/app/nextpath/result
+      - nextpath-download:/app/nextpath/download
+    secrets:
+      - source: nextpath_cert
+        target: /run/secrets/cert.pem
+      - source: nextpath_key
+        target: /run/secrets/key.pem
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "nextpath-engine", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+
+networks:
+  hostnet:
+    external: true
+    name: host
+
+volumes:
+  nextpath-lists:
+  nextpath-result:
+  nextpath-download:
+
+secrets:
+  nextpath_cert:
+    external: true
+  nextpath_key:
+    external: true
