@@ -623,34 +623,58 @@ func stripPrefixesMap(src map[string]struct{}) map[string]struct{} {
 }
 
 func writeRPZFile(path string, domains []string, excl []string, rawRules []string, routeAll bool) {
-	f, err := os.Create(path)
+	tmpPath := path + ".tmp"
+	f, err := os.Create(tmpPath)
 	if err != nil {
-		logger.Error("COMPILER", "Failed to create RPZ file %s: %v", path, err)
+		logger.Error("COMPILER", "Failed to create temp RPZ file %s: %v", tmpPath, err)
 		return
 	}
-	defer f.Close()
 
-	_, _ = f.WriteString(fmt.Sprintf("$TTL 10800\n@ SOA . . (%d 1 1 1 10800)\n", time.Now().Unix()))
+	bw := bufio.NewWriterSize(f, 64*1024)
+
+	_, _ = bw.WriteString(fmt.Sprintf("$TTL 10800\n@ SOA . . (%d 1 1 1 10800)\n", time.Now().Unix()))
 	if routeAll && strings.Contains(path, "proxy") {
-		_, _ = f.WriteString("* CNAME .\n")
+		_, _ = bw.WriteString("* CNAME .\n")
 	}
 
 	for _, r := range rawRules {
-		_, _ = f.WriteString(r + "\n")
+		_, _ = bw.WriteString(r + "\n")
 	}
 
 	sort.Strings(excl)
 	for _, d := range excl {
 		if d != "" && d != "." {
-			_, _ = f.WriteString(fmt.Sprintf("%s. CNAME rpz-passthru.\n*.%s. CNAME rpz-passthru.\n", d, d))
+			_, _ = bw.WriteString(fmt.Sprintf("%s. CNAME rpz-passthru.\n*.%s. CNAME rpz-passthru.\n", d, d))
 		}
 	}
 
 	sort.Strings(domains)
 	for _, d := range domains {
 		if d != "" && d != "." {
-			_, _ = f.WriteString(fmt.Sprintf("%s. CNAME .\n*.%s. CNAME .\n", d, d))
+			_, _ = bw.WriteString(fmt.Sprintf("%s. CNAME .\n*.%s. CNAME .\n", d, d))
 		}
+	}
+
+	if err := bw.Flush(); err != nil {
+		_ = f.Close()
+		_ = os.Remove(tmpPath)
+		logger.Error("COMPILER", "Failed to flush RPZ file %s: %v", tmpPath, err)
+		return
+	}
+
+	if err := f.Sync(); err != nil {
+		_ = f.Close()
+		_ = os.Remove(tmpPath)
+		logger.Error("COMPILER", "Failed to sync RPZ file %s: %v", tmpPath, err)
+		return
+	}
+
+	_ = f.Close()
+
+	if err := os.Rename(tmpPath, path); err != nil {
+		_ = os.Remove(tmpPath)
+		logger.Error("COMPILER", "Failed to rename temp RPZ file %s to %s: %v", tmpPath, path, err)
+		return
 	}
 }
 
@@ -862,17 +886,37 @@ func filterIPNets(src []netip.Prefix, isV6 bool, applySafeguard bool) []netip.Pr
 }
 
 func writeIPFile(path string, nets []netip.Prefix) {
-	f, err := os.Create(path)
+	tmpPath := path + ".tmp"
+	f, err := os.Create(tmpPath)
 	if err != nil {
-		logger.Error("COMPILER", "Failed to create IP file %s: %v", path, err)
+		logger.Error("COMPILER", "Failed to create temp IP file %s: %v", tmpPath, err)
 		return
 	}
-	defer f.Close()
+
+	bw := bufio.NewWriterSize(f, 64*1024)
+
 	for _, n := range nets {
-		if _, err := f.WriteString(n.String() + "\n"); err != nil {
-			logger.Error("COMPILER", "Failed to write to IP file %s: %v", path, err)
+		if _, err := bw.WriteString(n.String() + "\n"); err != nil {
+			_ = f.Close()
+			_ = os.Remove(tmpPath)
+			logger.Error("COMPILER", "Failed to write to temp IP file %s: %v", tmpPath, err)
 			return
 		}
+	}
+
+	if err := bw.Flush(); err != nil {
+		_ = f.Close()
+		_ = os.Remove(tmpPath)
+		logger.Error("COMPILER", "Failed to flush temp IP file %s: %v", tmpPath, err)
+		return
+	}
+
+	_ = f.Close()
+
+	if err := os.Rename(tmpPath, path); err != nil {
+		_ = os.Remove(tmpPath)
+		logger.Error("COMPILER", "Failed to rename temp IP file %s to %s: %v", tmpPath, path, err)
+		return
 	}
 }
 
@@ -1004,14 +1048,47 @@ func isAlnumOrU(c byte) bool {
 func stripPrefix(d string) string {
 	if strings.Count(d, ".") >= 2 {
 		dLower := strings.ToLower(d)
-		if strings.HasPrefix(dLower, "www.") {
-			return d[4:]
-		}
-		if strings.HasPrefix(dLower, "m.") {
-			return d[2:]
+		firstDot := strings.IndexByte(dLower, '.')
+		if firstDot > 0 {
+			prefix := dLower[:firstDot]
+			if isNumberedPrefix(prefix, "www") ||
+				isNumberedPrefix(prefix, "m") ||
+				isNumberedPrefix(prefix, "hd") ||
+				isNumberedPrefix(prefix, "cdn") ||
+				isPureDigits(prefix) {
+				return d[firstDot+1:]
+			}
 		}
 	}
 	return d
+}
+
+func isNumberedPrefix(s, base string) bool {
+	if !strings.HasPrefix(s, base) {
+		return false
+	}
+	rest := s[len(base):]
+	if len(rest) == 0 {
+		return true
+	}
+	for i := 0; i < len(rest); i++ {
+		if rest[i] < '0' || rest[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func isPureDigits(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func getStateHash(cfg CompileConfig, fileType string) string {

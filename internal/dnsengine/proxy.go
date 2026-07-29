@@ -84,7 +84,7 @@ func (p *DNSProxy) Close() error {
 
 func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	MetricsDNSQueries.Add(1)
-	if len(r.Question) == 0 {
+	if len(r.Question) == 0 || (len(r.Question) == 1 && (r.Question[0].Name == "." || r.Question[0].Name == "healthcheck.nextpath.")) {
 		msg := new(dns.Msg)
 		msg.SetReply(r)
 		_ = w.WriteMsg(msg)
@@ -305,18 +305,26 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 
 func (p *DNSProxy) resolveUpstream(r *dns.Msg) (*dns.Msg, error) {
 	var lastErr error
+	udpClient := &dns.Client{Timeout: 3 * time.Second}
+	tcpClient := &dns.Client{Net: "tcp", Timeout: 3 * time.Second}
+
 	for _, upstream := range p.upstreams {
-		resp, _, err := p.udpClient.Exchange(r, upstream)
-		if err == nil {
-			if resp.Truncated {
-				respTCP, _, errTCP := p.tcpClient.Exchange(r, upstream)
-				if errTCP == nil {
-					return respTCP, nil
+		for attempt := 0; attempt < 2; attempt++ {
+			resp, _, err := udpClient.Exchange(r, upstream)
+			if err == nil {
+				if resp.Truncated {
+					respTCP, _, errTCP := tcpClient.Exchange(r, upstream)
+					if errTCP == nil {
+						return respTCP, nil
+					}
 				}
+				return resp, nil
 			}
-			return resp, nil
+			lastErr = err
+			if attempt == 0 {
+				time.Sleep(10 * time.Millisecond)
+			}
 		}
-		lastErr = err
 	}
 	return nil, lastErr
 }

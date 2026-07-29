@@ -33,13 +33,13 @@ func runHealthCheck() {
 	}
 	target := net.JoinHostPort(proxyAddr, proxyPort)
 
-	conn, err := net.DialTimeout("udp", target, 2*time.Second)
+	conn, err := net.DialTimeout("udp", target, 5*time.Second)
 	if err != nil {
 		fmt.Printf("Healthcheck failed to connect: %v\n", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
-	_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
+	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
 
 	msg := []byte{
 		0x12, 0x34,

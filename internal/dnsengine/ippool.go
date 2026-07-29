@@ -466,7 +466,11 @@ func (p *IPPool) GetFakeIPsForReals(reals []net.IP, isIPv6 bool) (map[string]net
 				}
 				for attempt := uint32(0); attempt < maxAttempts; attempt++ {
 					offset := (naturalOffset + attempt) % p.poolSize
-					candidateIP := net.IPv4(byte((p.poolStart+offset)>>24), byte((p.poolStart+offset)>>16), byte((p.poolStart+offset)>>8), byte(p.poolStart+offset))
+					candidateIPVal := p.poolStart + offset
+					if candidateIPVal%256 == 0 || candidateIPVal%256 == 255 {
+						continue
+					}
+					candidateIP := net.IPv4(byte(candidateIPVal>>24), byte(candidateIPVal>>16), byte(candidateIPVal>>8), byte(candidateIPVal))
 					if _, occupied := p.globalFakeToReal[ToIPKey(candidateIP)]; !occupied {
 						finalFake = candidateIP
 						break
@@ -530,6 +534,11 @@ func (p *IPPool) ComputeLevel1Hash(realIP net.IP, isIPv6 bool) net.IP {
 	if !isIPv6 {
 		offset := fnv1aBytes(realIP.To4()) % p.poolSize
 		ipVal := p.poolStart + offset
+		if ipVal%256 == 0 {
+			ipVal++
+		} else if ipVal%256 == 255 {
+			ipVal--
+		}
 		return net.IPv4(byte(ipVal>>24), byte(ipVal>>16), byte(ipVal>>8), byte(ipVal))
 	}
 	offset := fnv1aBytes(realIP.To16()) % p.poolSize6
