@@ -20,28 +20,28 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Inject Secret Sources
+      - name: Inject Variable Sources
         env:
-          URLS_INCLUDE_HOSTS: ${{ secrets.URLS_INCLUDE_HOSTS }}
-          URLS_EXCLUDE_HOSTS: ${{ secrets.URLS_EXCLUDE_HOSTS }}
-          URLS_INCLUDE_IPS: ${{ secrets.URLS_INCLUDE_IPS }}
-          URLS_EXCLUDE_IPS: ${{ secrets.URLS_EXCLUDE_IPS }}
-          URLS_DENY_IPS: ${{ secrets.URLS_DENY_IPS }}
-          URLS_ADBLOCK_HOSTS: ${{ secrets.URLS_ADBLOCK_HOSTS }}
-          URLS_EXCLUDE_ADBLOCK_HOSTS: ${{ secrets.URLS_EXCLUDE_ADBLOCK_HOSTS }}
-          URLS_REMOVE_HOSTS: ${{ secrets.URLS_REMOVE_HOSTS }}
-          URLS_RPZ: ${{ secrets.URLS_RPZ }}
-          URLS_RPZ2: ${{ secrets.URLS_RPZ2 }}
-          MANUAL_INCLUDE_HOSTS: ${{ secrets.MANUAL_INCLUDE_HOSTS }}
-          MANUAL_EXCLUDE_HOSTS: ${{ secrets.MANUAL_EXCLUDE_HOSTS }}
-          MANUAL_INCLUDE_IPS: ${{ secrets.MANUAL_INCLUDE_IPS }}
-          MANUAL_EXCLUDE_IPS: ${{ secrets.MANUAL_EXCLUDE_IPS }}
-          MANUAL_DENY_IPS: ${{ secrets.MANUAL_DENY_IPS }}
-          MANUAL_ADBLOCK_HOSTS: ${{ secrets.MANUAL_ADBLOCK_HOSTS }}
-          MANUAL_EXCLUDE_ADBLOCK_HOSTS: ${{ secrets.MANUAL_EXCLUDE_ADBLOCK_HOSTS }}
-          MANUAL_REMOVE_HOSTS: ${{ secrets.MANUAL_REMOVE_HOSTS }}
-          MANUAL_RPZ: ${{ secrets.MANUAL_RPZ }}
-          MANUAL_RPZ2: ${{ secrets.MANUAL_RPZ2 }}
+          URLS_INCLUDE_HOSTS: ${{ vars.URLS_INCLUDE_HOSTS }}
+          URLS_EXCLUDE_HOSTS: ${{ vars.URLS_EXCLUDE_HOSTS }}
+          URLS_INCLUDE_IPS: ${{ vars.URLS_INCLUDE_IPS }}
+          URLS_EXCLUDE_IPS: ${{ vars.URLS_EXCLUDE_IPS }}
+          URLS_DENY_IPS: ${{ vars.URLS_DENY_IPS }}
+          URLS_ADBLOCK_HOSTS: ${{ vars.URLS_ADBLOCK_HOSTS }}
+          URLS_EXCLUDE_ADBLOCK_HOSTS: ${{ vars.URLS_EXCLUDE_ADBLOCK_HOSTS }}
+          URLS_REMOVE_HOSTS: ${{ vars.URLS_REMOVE_HOSTS }}
+          URLS_RPZ: ${{ vars.URLS_RPZ }}
+          URLS_RPZ2: ${{ vars.URLS_RPZ2 }}
+          MANUAL_INCLUDE_HOSTS: ${{ vars.MANUAL_INCLUDE_HOSTS }}
+          MANUAL_EXCLUDE_HOSTS: ${{ vars.MANUAL_EXCLUDE_HOSTS }}
+          MANUAL_INCLUDE_IPS: ${{ vars.MANUAL_INCLUDE_IPS }}
+          MANUAL_EXCLUDE_IPS: ${{ vars.MANUAL_EXCLUDE_IPS }}
+          MANUAL_DENY_IPS: ${{ vars.MANUAL_DENY_IPS }}
+          MANUAL_ADBLOCK_HOSTS: ${{ vars.MANUAL_ADBLOCK_HOSTS }}
+          MANUAL_EXCLUDE_ADBLOCK_HOSTS: ${{ vars.MANUAL_EXCLUDE_ADBLOCK_HOSTS }}
+          MANUAL_REMOVE_HOSTS: ${{ vars.MANUAL_REMOVE_HOSTS }}
+          MANUAL_RPZ: ${{ vars.MANUAL_RPZ }}
+          MANUAL_RPZ2: ${{ vars.MANUAL_RPZ2 }}
         run: |
           echo "$URLS_INCLUDE_HOSTS" > lists/sources/include-hosts.txt
           echo "$URLS_EXCLUDE_HOSTS" > lists/sources/exclude-hosts.txt
