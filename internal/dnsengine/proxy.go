@@ -206,8 +206,7 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	go func() {
 		var toBroadcast []Mapping
 
-		for realStr, info := range newV4 {
-			fake := info.IP
+		for realStr, fake := range mapV4 {
 			parsedIP := net.ParseIP(realStr)
 			if parsedIP == nil {
 				continue
@@ -221,13 +220,19 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 					logger.Debug("PROXY", "Applied mapping %s -> %s", fake, realIP)
 				}
 			}
-			if p.syncMgr != nil {
-				toBroadcast = append(toBroadcast, Mapping{FakeIP: fake, RealIP: realIP, Version: info.Version})
+		}
+
+		if p.syncMgr != nil {
+			for realStr, info := range newV4 {
+				parsedIP := net.ParseIP(realStr)
+				if parsedIP == nil {
+					continue
+				}
+				toBroadcast = append(toBroadcast, Mapping{FakeIP: info.IP, RealIP: parsedIP.To4(), Version: info.Version})
 			}
 		}
 
-		for realStr, info := range newV6 {
-			fake := info.IP
+		for realStr, fake := range mapV6 {
 			parsedIP := net.ParseIP(realStr)
 			if parsedIP == nil {
 				continue
@@ -241,8 +246,15 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 					logger.Debug("PROXY", "Applied mapping %s -> %s", fake, realIP)
 				}
 			}
-			if p.syncMgr != nil {
-				toBroadcast = append(toBroadcast, Mapping{FakeIP: fake, RealIP: realIP, Version: info.Version})
+		}
+
+		if p.syncMgr != nil {
+			for realStr, info := range newV6 {
+				parsedIP := net.ParseIP(realStr)
+				if parsedIP == nil {
+					continue
+				}
+				toBroadcast = append(toBroadcast, Mapping{FakeIP: info.IP, RealIP: parsedIP.To16(), Version: info.Version})
 			}
 		}
 
