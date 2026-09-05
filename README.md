@@ -322,6 +322,9 @@ All parameters are configured via environment variables in the `.env` file. (Ref
 | `PROXY_PORT` | `53` | Port for the Go DNS proxy listener. |
 | `KRESD_WORKERS` | `auto` | Number of Knot Resolver worker processes per instance. |
 | `CACHE_SIZE` | `5%` | Knot Resolver cache size **per instance**. Because there are 2 instances, total RAM used is double this value (e.g., `5%` = 10% total, `256` = 512MB total). |
+| `CACHE_MAX_TTL` | `7200` | Maximum cache TTL (seconds) for upstream records in Knot Resolver (2 hours). |
+| `MIN_TTL` | `60` | Minimum cache TTL (seconds) in Knot Resolver. |
+| `NEG_TTL` | `60` | Negative answer cache TTL (seconds) in Knot Resolver. |
 
 ---
 
