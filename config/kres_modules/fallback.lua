@@ -5,7 +5,15 @@ ffi.cdef("void kr_server_selection_init(struct kr_query *qry);")
 
 local M = {
 	layer = {},
-	action = policy.FORWARD({'1.1.1.1', '9.9.9.10', '76.76.2.0', '8.8.8.8'})
+	-- Cloudflare + Quad9 (@9953) + OpenDNS (@443) + ControlD + Google
+	action = policy.FORWARD({
+		'1.1.1.1',
+		'9.9.9.10@9953',
+		'149.112.112.10@9953',
+		'208.67.222.222@443',
+		'76.76.2.0',
+		'8.8.8.8'
+	})
 }
 
 local fallback = {}
@@ -24,8 +32,17 @@ local function do_fallback(state, req, qry)
 		cache.clear(qname, true)
 	end)
 
+	-- Reset current records
+	if qry.cname_parent == nil then
+		req.answ_selected.len = 0
+	end
 	req.auth_selected.len = 0
 	req.add_selected.len = 0
+
+	-- Reset query flags
+	qry.flags.NO_NS_FOUND = false
+	qry.flags.TCP = false
+
 	req.selection_context.forwarding_targets.len = 0
 	req.count_fail_row = 0
 
