@@ -11,25 +11,27 @@ import (
 )
 
 type DNSProxy struct {
-	pool      atomic.Pointer[IPPool]
-	nftClient *netlink.NFTClient
-	syncMgr   *SyncManager
-	upstreams []string
-	maxTTL    uint32
-	server    *dns.Server
-	serverTCP *dns.Server
-	udpClient *dns.Client
-	tcpClient *dns.Client
+	pool       atomic.Pointer[IPPool]
+	nftClient  *netlink.NFTClient
+	syncMgr    *SyncManager
+	upstreams  []string
+	maxTTL     uint32
+	enableIPv6 bool
+	server     *dns.Server
+	serverTCP  *dns.Server
+	udpClient  *dns.Client
+	tcpClient  *dns.Client
 }
 
-func NewDNSProxy(listenAddr, upstreamAddr string, pool *IPPool, nftClient *netlink.NFTClient, syncMgr *SyncManager, maxTTL uint32) *DNSProxy {
+func NewDNSProxy(listenAddr, upstreamAddr string, pool *IPPool, nftClient *netlink.NFTClient, syncMgr *SyncManager, maxTTL uint32, enableIPv6 bool) *DNSProxy {
 	proxy := &DNSProxy{
-		nftClient: nftClient,
-		syncMgr:   syncMgr,
-		upstreams: []string{upstreamAddr},
-		maxTTL:    maxTTL,
-		udpClient: &dns.Client{Timeout: 2 * time.Second},
-		tcpClient: &dns.Client{Net: "tcp", Timeout: 2 * time.Second},
+		nftClient:  nftClient,
+		syncMgr:    syncMgr,
+		upstreams:  []string{upstreamAddr},
+		maxTTL:     maxTTL,
+		enableIPv6: enableIPv6,
+		udpClient:  &dns.Client{Timeout: 2 * time.Second},
+		tcpClient:  &dns.Client{Net: "tcp", Timeout: 2 * time.Second},
 	}
 	proxy.pool.Store(pool)
 
@@ -119,6 +121,9 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	}
 
 	addV6 := func(ip net.IP) {
+		if !p.enableIPv6 {
+			return
+		}
 		if ip.To4() != nil {
 			return
 		}
@@ -142,6 +147,9 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 					}
 				}
 			} else if kv.Key() == dns.SVCB_IPV6HINT {
+				if !p.enableIPv6 {
+					continue
+				}
 				if hint, ok := kv.(*dns.SVCBIPv6Hint); ok {
 					for _, ip := range hint.Hint {
 						addV6(ip)
@@ -278,6 +286,9 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 					n++
 				}
 			case *dns.AAAA:
+				if !p.enableIPv6 {
+					continue
+				}
 				if fake, exists := mapV6[record.AAAA.String()]; exists {
 					record.AAAA = fake
 					record.Header().Ttl = min(record.Header().Ttl, p.maxTTL)
@@ -288,12 +299,12 @@ func (p *DNSProxy) handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 					n++
 				}
 			case *dns.SVCB:
-				record.Value = patchSVCBValues(record.Value, mapV4, mapV6)
+				record.Value = patchSVCBValues(record.Value, mapV4, mapV6, p.enableIPv6)
 				record.Header().Ttl = min(record.Header().Ttl, p.maxTTL)
 				rrs[n] = record
 				n++
 			case *dns.HTTPS:
-				record.Value = patchSVCBValues(record.Value, mapV4, mapV6)
+				record.Value = patchSVCBValues(record.Value, mapV4, mapV6, p.enableIPv6)
 				record.Header().Ttl = min(record.Header().Ttl, p.maxTTL)
 				rrs[n] = record
 				n++
@@ -341,7 +352,7 @@ func (p *DNSProxy) resolveUpstream(r *dns.Msg) (*dns.Msg, error) {
 	return nil, lastErr
 }
 
-func patchSVCBValues(values []dns.SVCBKeyValue, mapV4 map[string]net.IP, mapV6 map[string]net.IP) []dns.SVCBKeyValue {
+func patchSVCBValues(values []dns.SVCBKeyValue, mapV4 map[string]net.IP, mapV6 map[string]net.IP, enableIPv6 bool) []dns.SVCBKeyValue {
 	var newValues []dns.SVCBKeyValue
 	for _, kv := range values {
 		switch kv.Key() {
@@ -357,6 +368,9 @@ func patchSVCBValues(values []dns.SVCBKeyValue, mapV4 map[string]net.IP, mapV6 m
 			}
 			newValues = append(newValues, kv)
 		case dns.SVCB_IPV6HINT:
+			if !enableIPv6 {
+				continue
+			}
 			if hint, ok := kv.(*dns.SVCBIPv6Hint); ok {
 				var newHints []net.IP
 				for _, ip := range hint.Hint {

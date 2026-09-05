@@ -232,6 +232,8 @@ func main() {
 		dnsengine.StartMetricsServer(metricsAddr, metricsPort, pool)
 	}
 
+	enableIPv6 := getEnvBool("ENABLE_IPV6", true)
+
 	dnsProxy := dnsengine.NewDNSProxy(
 		net.JoinHostPort(proxyAddr, proxyPort),
 		net.JoinHostPort(dnsAddr2, "53"),
@@ -239,6 +241,7 @@ func main() {
 		nftClient,
 		syncMgr,
 		uint32(maxTTL),
+		enableIPv6,
 	)
 
 	errChan := make(chan error, 1)

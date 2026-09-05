@@ -38,12 +38,13 @@ type mappingOp struct {
 }
 
 type NFTClient struct {
-	conn      *nftables.Conn
-	muConn    sync.Mutex
-	batchCh   chan mappingOp
-	cancelCh  chan struct{}
-	done      chan struct{}
-	closeOnce sync.Once
+	conn       *nftables.Conn
+	muConn     sync.Mutex
+	batchCh    chan mappingOp
+	cancelCh   chan struct{}
+	done       chan struct{}
+	closeOnce  sync.Once
+	enableIPv6 bool
 }
 
 func NewNFTClient() (*NFTClient, error) {
@@ -52,10 +53,11 @@ func NewNFTClient() (*NFTClient, error) {
 		return nil, fmt.Errorf("failed to connect to nftables Netlink: %w", err)
 	}
 	c := &NFTClient{
-		conn:     conn,
-		batchCh:  make(chan mappingOp, batchChanSize),
-		cancelCh: make(chan struct{}),
-		done:     make(chan struct{}),
+		conn:       conn,
+		batchCh:    make(chan mappingOp, batchChanSize),
+		cancelCh:   make(chan struct{}),
+		done:       make(chan struct{}),
+		enableIPv6: parseBoolEnv("ENABLE_IPV6", true),
 	}
 
 	go c.batchWorker()
@@ -199,6 +201,9 @@ func (c *NFTClient) flushBatchLocked(batch []mappingOp) error {
 
 	for _, op := range batch {
 		isIPv6 := op.fakeIP.To4() == nil
+		if isIPv6 && !c.enableIPv6 {
+			continue
+		}
 
 		var keyBytes, valBytes []byte
 		if isIPv6 {
@@ -231,7 +236,7 @@ func (c *NFTClient) flushBatchLocked(batch []mappingOp) error {
 			return fmt.Errorf("failed to add %d v4 elements: %w", len(v4ToAdd), err)
 		}
 	}
-	if len(v6ToAdd) > 0 {
+	if c.enableIPv6 && len(v6ToAdd) > 0 {
 		if err := c.conn.SetAddElements(v6Map, v6ToAdd); err != nil {
 			return fmt.Errorf("failed to add %d v6 elements: %w", len(v6ToAdd), err)
 		}
@@ -575,6 +580,9 @@ func InitStructure(poolNet, poolNet6 string) error {
 func (c *NFTClient) AddMapping(fakeIP, realIP net.IP, timeout time.Duration) error {
 	if fakeIP == nil || realIP == nil {
 		return fmt.Errorf("invalid address: fake=%v, real=%v", fakeIP, realIP)
+	}
+	if !c.enableIPv6 && fakeIP.To4() == nil {
+		return nil
 	}
 
 	fakeIPCopy := make(net.IP, len(fakeIP))
