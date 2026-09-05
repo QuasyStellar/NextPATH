@@ -136,7 +136,7 @@ func TestProxy_IPv6Disabled(t *testing.T) {
 	proxy := NewDNSProxy(proxyAddr, upstreamAddr, pool, nil, nil, 300, false)
 
 	go func() { _ = proxy.Start() }()
-	defer proxy.Close()
+	defer func() { _ = proxy.Close() }()
 	time.Sleep(100 * time.Millisecond)
 
 	client := new(dns.Client)
