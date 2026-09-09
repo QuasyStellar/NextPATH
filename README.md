@@ -253,7 +253,7 @@ All parameters are configured via environment variables in the `.env` file. (Ref
 ### Core Settings & Routing
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `UPSTREAM_DNS` | `1` | Upstream DNS selection (1–7) ([see sets below](#upstream_dns-upstream-sets)) or custom comma-separated IPs. |
+| `UPSTREAM_DNS` | `1` | Upstream DNS selection (1–8) ([see sets below](#upstream_dns-upstream-sets)) or custom comma-separated IPs. |
 | `CUSTOM_DNS_ROUTES` | `ru...` | Routes queries for specific top-level domains to specific servers. |
 | `OPENNIC_IPS` | `94...` | Custom IP list for OpenNIC TLD resolution. |
 | `ENABLE_IPV6` | `y` | Enable dual-stack IPv6 parsing, allocation, and routing. |
@@ -334,13 +334,14 @@ All parameters are configured via environment variables in the `.env` file. (Ref
 
 | `UPSTREAM_DNS` | Description | Upstream IPs |
 |-----------|-------------|--------------|
-| `1` | Cloudflare+Quad9 | `1.1.1.1`, `1.0.0.1`, `9.9.9.10`, `149.112.112.10` |
-| `2` | Google + Cloudflare| `8.8.8.8`, `8.8.4.4`, `1.1.1.1` |
-| `3` | OpenDNS | `208.67.222.222`, `208.67.220.220` |
-| `4` | Quad9 (No ECS) | `9.9.9.10`, `149.112.112.10` |
-| `5` | ControlD + Quad9 | `76.76.2.0`, `9.9.9.10` |
-| `6` | AdGuard DNS Global | `94.140.14.140`, `94.140.14.141` |
-| `7` | CleanBrowsing (Family) | `185.228.168.168`, `185.228.169.168` |
+| `1` (Default) | Cloudflare + Quad9 + ControlD + UltraDNS | `1.1.1.1`, `1.0.0.1`, `9.9.9.10`, `149.112.112.10`, `9.9.9.10@9953`, `149.112.112.10@9953`, `76.76.2.0`, `76.76.10.0`, `64.6.64.6`, `64.6.65.6` |
+| `2` | MSK-IX + NSDI + BI.ZONE + TransTeleCom | `62.76.76.62`, `62.76.62.76`, `195.208.4.1`, `195.208.5.1`, `185.191.32.7`, `185.191.32.8`, `217.150.34.129`, `217.150.35.129` |
+| `3` | Yandex (Port 53 & 1253) | `77.88.8.8`, `77.88.8.1`, `77.88.8.8@1253`, `77.88.8.1@1253` |
+| `4` | Google | `8.8.8.8`, `8.8.4.4` |
+| `5` | AdGuard (Port 53 & 5353) | `94.140.14.14`, `94.140.15.15`, `94.140.14.14@5353`, `94.140.15.15@5353` |
+| `6` | Comss (Anti-Censorship / Proxying) | `83.220.169.155`, `212.109.195.93`, `195.133.25.16` |
+| `7` | XBox (Console / Geo-unblock) | `111.88.96.50`, `111.88.96.51` |
+| `8` | GeoHide (Geo-unblock Proxying) | `217.60.245.219`, `217.60.245.233`, `31.25.239.132`, `143.20.64.192`, `2.27.118.34` |
 
 ---
 
